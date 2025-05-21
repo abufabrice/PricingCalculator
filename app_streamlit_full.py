@@ -1,17 +1,20 @@
-
 import streamlit as st
 import pandas as pd
 import altair as alt
 
-# Load configuration files
+# Load data
 modules_df = pd.read_csv('modules_config_clean.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
+# Page config
 st.set_page_config(page_title='Transport Pricing Simulator', layout='wide')
-st.title("🚌 Transport Pricing Simulator")
-st.markdown("Use this tool to simulate monthly pricing based on module usage. Admins can configure module pricing tiers.")
 
-# Admin Mode Toggle
+# App title and total cost placeholder
+st.title("🚌 Transport Pricing Simulator")
+total_cost_placeholder = st.empty()
+
+# Admin toggle in sidebar
+st.sidebar.header("Settings")
 admin_mode = st.sidebar.checkbox("Enable Admin Mode")
 
 # Column Names
@@ -26,32 +29,32 @@ usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
 
-# Module Inputs & Admin Pricing Config
-st.header("Module Usage & Pricing Configuration")
+# Sidebar for module usage and admin config
+st.sidebar.subheader("📊 Module Usage")
 for _, mod in modules_df.iterrows():
     module_name = str(mod[module_col])
     pricing_type = str(mod[type_col]).strip().lower()
 
-    usage = st.slider(f"{module_name} usage", 0, 1000, 0)
+    usage = st.sidebar.slider(f"{module_name}", 0, 1000, 0)
     usage_inputs[module_name] = usage
 
     if admin_mode:
         if pricing_type == 'flat':
             default_price = float(mod[price_col]) if pd.notna(mod[price_col]) else 0.0
-            flat_prices[module_name] = st.number_input(f"{module_name} unit price", value=default_price, min_value=0.0)
+            flat_prices[module_name] = st.sidebar.number_input(f"{module_name} Price", value=default_price, min_value=0.0)
         elif pricing_type == 'tiered':
-            st.markdown(f"**{module_name} – Tiered Pricing**")
+            st.sidebar.markdown(f"**{module_name} – Tiered Pricing**")
             tier_data = tiers_df[tiers_df[tier_module_col] == module_name].copy()
-            edited = st.data_editor(tier_data.drop(columns=[tier_module_col]), key=f"tiers_{module_name}", num_rows="fixed")
-            edited[tier_module_col] = module_name
-            tier_configs[module_name] = edited
+            editable = st.sidebar.data_editor(tier_data.drop(columns=[tier_module_col]), key=f"tiers_{module_name}", num_rows="fixed")
+            editable[tier_module_col] = module_name
+            tier_configs[module_name] = editable
     else:
         if pricing_type == 'flat':
             flat_prices[module_name] = float(mod[price_col]) if pd.notna(mod[price_col]) else 0.0
         elif pricing_type == 'tiered':
             tier_configs[module_name] = tiers_df[tiers_df[tier_module_col] == module_name].copy()
 
-# Cost Calculation
+# Cost calculation
 results = []
 for module_name, usage in usage_inputs.items():
     pricing_type = str(modules_df[modules_df[module_col] == module_name][type_col].values[0]).lower()
@@ -86,22 +89,18 @@ for module_name, usage in usage_inputs.items():
 
     results.append({"Module": module_name, "Usage": usage, "Cost": cost})
 
-# Results Display
+# Display total cost at top
 results_df = pd.DataFrame(results)
 total = results_df["Cost"].sum()
+total_cost_placeholder.subheader(f"💰 Estimated Monthly Cost: {total:,.0f} FCFA")
 
-st.header(f"💰 Total Monthly Cost: {total:,.0f} FCFA")
-st.dataframe(results_df)
-
-# Charts
+# Visual breakdown
 col1, col2 = st.columns(2)
-
 with col1:
-    st.subheader("Cost per Module (Bar Chart)")
+    st.subheader("Cost per Module")
     st.bar_chart(results_df.set_index("Module")["Cost"])
-
 with col2:
-    st.subheader("Cost Distribution (Pie Chart)")
+    st.subheader("Cost Distribution")
     pie = alt.Chart(results_df).mark_arc(innerRadius=40).encode(
         theta=alt.Theta("Cost", type="quantitative"),
         color=alt.Color("Module", type="nominal"),
@@ -109,5 +108,5 @@ with col2:
     )
     st.altair_chart(pie, use_container_width=True)
 
-# Export CSV
-st.download_button("📥 Download Breakdown CSV", results_df.to_csv(index=False), file_name="cost_breakdown.csv", mime="text/csv")
+# Download
+st.download_button("📥 Download Cost Breakdown", results_df.to_csv(index=False), file_name="pricing_breakdown.csv", mime="text/csv")
