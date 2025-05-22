@@ -7,7 +7,8 @@ st.set_page_config(page_title='Transport Pricing Simulator', layout='wide', page
 lang = st.sidebar.radio("🌍 Language", ["English", "Français"])
 is_french = lang == "Français"
 
-modules_df = pd.read_csv('modules_config_clean.csv')
+# Load data with usage configuration
+modules_df = pd.read_csv('modules_config_with_usage.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
 categories = {
@@ -41,6 +42,9 @@ usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
 
+updated_usage_settings = []
+
+# Configurable columns
 module_col = 'Module'
 type_col = 'Type'
 price_col = 'UnitPrice'
@@ -48,26 +52,23 @@ tier_module_col = 'Module'
 tier_threshold_col = 'Threshold'
 tier_price_col = 'Price'
 
-slider_defaults = {}
-slider_maximums = {}
-
+# Sidebar sliders
 st.sidebar.subheader("📊 Module Usage" if not is_french else "📊 Utilisation des Modules")
 for _, mod in modules_df.iterrows():
     module_name = str(mod[module_col])
     pricing_type = str(mod[type_col]).strip().lower()
 
+    default_usage = int(mod["DefaultUsage"]) if not pd.isna(mod["DefaultUsage"]) else 100
+    max_usage = int(mod["MaxUsage"]) if not pd.isna(mod["MaxUsage"]) else default_usage * 2
+
     if admin_mode:
         st.sidebar.markdown(f"**{module_name} Config**")
-        default_usage = st.sidebar.number_input(f"Default usage for {module_name}", min_value=0, value=100, key=f"default_{module_name}")
-        max_usage = st.sidebar.number_input(f"Max usage for {module_name}", min_value=default_usage, value=default_usage*2, key=f"max_{module_name}")
-    else:
-        default_usage = 100
-        max_usage = default_usage * 2
+        default_usage = st.sidebar.number_input(f"Default usage for {module_name}", min_value=0, value=default_usage, key=f"default_{module_name}")
+        max_usage = st.sidebar.number_input(f"Max usage for {module_name}", min_value=default_usage, value=max_usage, key=f"max_{module_name}")
+        updated_usage_settings.append((module_name, default_usage, max_usage))
 
     usage = st.sidebar.slider(module_name, 0, max_usage, default_usage, key=f"slider_{module_name}")
     usage_inputs[module_name] = usage
-    slider_defaults[module_name] = default_usage
-    slider_maximums[module_name] = max_usage
 
     if admin_mode:
         if pricing_type == 'flat':
@@ -85,6 +86,7 @@ for _, mod in modules_df.iterrows():
         elif pricing_type == 'tiered':
             tier_configs[module_name] = tiers_df[tiers_df[tier_module_col] == module_name].copy()
 
+# Cost calculation
 records = []
 for module_name, usage in usage_inputs.items():
     pricing_type = str(modules_df[modules_df[module_col] == module_name][type_col].values[0]).lower()
@@ -135,6 +137,7 @@ for module_name, usage in usage_inputs.items():
 results_df = pd.DataFrame(records)
 total_cost = results_df["Cost (FCFA)"].sum()
 
+# Cost summary
 st.subheader(f"💰 {'Estimated Monthly Cost' if not is_french else 'Coût Mensuel Estimé'}: {total_cost:,.0f} FCFA")
 
 col1, col2 = st.columns(2)
@@ -151,10 +154,17 @@ with col2:
     )
     st.altair_chart(pie, use_container_width=True)
 
+# Breakdown table
 st.markdown("### 🧾 Cost Breakdown by Module" if not is_french else "### 🧾 Détail du Coût par Module")
 st.dataframe(results_df.style.format({col: "{:,.0f}" for col in results_df.select_dtypes(include="number").columns}))
 
-st.download_button("📥 Download CSV" if not is_french else "📥 Télécharger CSV",
-                   results_df.to_csv(index=False),
-                   file_name="pricing_breakdown.csv",
-                   mime="text/csv")
+# Save updated usage config (admin only)
+if admin_mode and st.button("💾 Save Usage Settings"):
+    save_df = modules_df.copy()
+    for mod_name, default_val, max_val in updated_usage_settings:
+        save_df.loc[save_df["Module"] == mod_name, "DefaultUsage"] = default_val
+        save_df.loc[save_df["Module"] == mod_name, "MaxUsage"] = max_val
+    st.download_button("⬇️ Download Updated Config CSV",
+                       save_df.to_csv(index=False),
+                       file_name="updated_modules_config.csv",
+                       mime="text/csv")
