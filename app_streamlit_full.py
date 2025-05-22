@@ -7,8 +7,7 @@ st.set_page_config(page_title='Transport Pricing Simulator', layout='wide', page
 lang = st.sidebar.radio("🌍 Language", ["English", "Français"])
 is_french = lang == "Français"
 
-# Load data with usage configuration
-modules_df = pd.read_csv('modules_config_with_usage.csv')
+modules_df = pd.read_csv('modules_config_matched.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
 categories = {
@@ -44,19 +43,10 @@ tier_configs = {}
 
 updated_usage_settings = []
 
-# Configurable columns
-module_col = 'Module'
-type_col = 'Type'
-price_col = 'UnitPrice'
-tier_module_col = 'Module'
-tier_threshold_col = 'Threshold'
-tier_price_col = 'Price'
-
-# Sidebar sliders
 st.sidebar.subheader("📊 Module Usage" if not is_french else "📊 Utilisation des Modules")
 for _, mod in modules_df.iterrows():
-    module_name = str(mod[module_col])
-    pricing_type = str(mod[type_col]).strip().lower()
+    module_name = str(mod["Module"])
+    pricing_type = str(mod["Type"]).strip().lower()
 
     default_usage = int(mod["DefaultUsage"]) if not pd.isna(mod["DefaultUsage"]) else 100
     max_usage = int(mod["MaxUsage"]) if not pd.isna(mod["MaxUsage"]) else default_usage * 2
@@ -72,24 +62,23 @@ for _, mod in modules_df.iterrows():
 
     if admin_mode:
         if pricing_type == 'flat':
-            default_price = float(mod[price_col]) if pd.notna(mod[price_col]) else 0.0
+            default_price = float(mod["UnitPrice"]) if pd.notna(mod["UnitPrice"]) else 0.0
             flat_prices[module_name] = st.sidebar.number_input(f"{module_name} Price", value=default_price, min_value=0.0)
         elif pricing_type == 'tiered':
             st.sidebar.markdown(f"**{module_name} – Tiered Pricing**")
-            tier_data = tiers_df[tiers_df[tier_module_col] == module_name].copy()
-            editable = st.sidebar.data_editor(tier_data.drop(columns=[tier_module_col]), key=f"tiers_{module_name}", num_rows="fixed")
-            editable[tier_module_col] = module_name
+            tier_data = tiers_df[tiers_df["Module"] == module_name].copy()
+            editable = st.sidebar.data_editor(tier_data.drop(columns=["Module"]), key=f"tiers_{module_name}", num_rows="fixed")
+            editable["Module"] = module_name
             tier_configs[module_name] = editable
     else:
         if pricing_type == 'flat':
-            flat_prices[module_name] = float(mod[price_col]) if pd.notna(mod[price_col]) else 0.0
+            flat_prices[module_name] = float(mod["UnitPrice"]) if pd.notna(mod["UnitPrice"]) else 0.0
         elif pricing_type == 'tiered':
-            tier_configs[module_name] = tiers_df[tiers_df[tier_module_col] == module_name].copy()
+            tier_configs[module_name] = tiers_df[tiers_df["Module"] == module_name].copy()
 
-# Cost calculation
 records = []
 for module_name, usage in usage_inputs.items():
-    pricing_type = str(modules_df[modules_df[module_col] == module_name][type_col].values[0]).lower()
+    pricing_type = str(modules_df[modules_df["Module"] == module_name]["Type"].values[0]).lower()
     cost = 0.0
     unit_price = None
     category = categories.get(module_name, "Other")
@@ -104,11 +93,11 @@ for module_name, usage in usage_inputs.items():
             infinite_price = None
             for _, t in tiers.iterrows():
                 try:
-                    thresh = float(t[tier_threshold_col])
-                    price = float(t[tier_price_col])
+                    thresh = float(t["Threshold"])
+                    price = float(t["Price"])
                     finite.append((thresh, price))
                 except:
-                    infinite_price = float(t[tier_price_col])
+                    infinite_price = float(t["Price"])
             finite.sort()
             remaining = usage
             prev = 0
@@ -137,7 +126,6 @@ for module_name, usage in usage_inputs.items():
 results_df = pd.DataFrame(records)
 total_cost = results_df["Cost (FCFA)"].sum()
 
-# Cost summary
 st.subheader(f"💰 {'Estimated Monthly Cost' if not is_french else 'Coût Mensuel Estimé'}: {total_cost:,.0f} FCFA")
 
 col1, col2 = st.columns(2)
@@ -154,17 +142,18 @@ with col2:
     )
     st.altair_chart(pie, use_container_width=True)
 
-# Breakdown table
 st.markdown("### 🧾 Cost Breakdown by Module" if not is_french else "### 🧾 Détail du Coût par Module")
 st.dataframe(results_df.style.format({col: "{:,.0f}" for col in results_df.select_dtypes(include="number").columns}))
 
-# Save updated usage config (admin only)
-if admin_mode and st.button("💾 Save Usage Settings"):
-    save_df = modules_df.copy()
-    for mod_name, default_val, max_val in updated_usage_settings:
-        save_df.loc[save_df["Module"] == mod_name, "DefaultUsage"] = default_val
-        save_df.loc[save_df["Module"] == mod_name, "MaxUsage"] = max_val
-    st.download_button("⬇️ Download Updated Config CSV",
-                       save_df.to_csv(index=False),
-                       file_name="updated_modules_config.csv",
-                       mime="text/csv")
+# Save settings section
+if admin_mode:
+    st.markdown("### 💾 Save Updated Usage Settings")
+    if st.button("📥 Download Config CSV"):
+        save_df = modules_df.copy()
+        for mod_name, default_val, max_val in updated_usage_settings:
+            save_df.loc[save_df["Module"] == mod_name, "DefaultUsage"] = default_val
+            save_df.loc[save_df["Module"] == mod_name, "MaxUsage"] = max_val
+        st.download_button("⬇️ Download Updated Config CSV",
+                           save_df.to_csv(index=False),
+                           file_name="updated_modules_config.csv",
+                           mime="text/csv")
