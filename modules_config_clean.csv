@@ -1,6 +1,13 @@
 Module,Type,UnitPrice
-Booking Manager,flat,500
+Booking Manager,tiered,
+Online Booking Manager,tiered,
 Parcel Manager,tiered,
-WhatsApp Notification,tiered,
-HR Manager,flat,300
-Fleet Maintenance,flat,1000
+Expense Manager,tiered,
+Customer Communication Manager,tiered,
+Customer Support Personnel (External),tiered,
+Maintenance Manager,tiered,
+Performance Optimization Tools,tiered,
+HR Configuration Manager,tiered,
+Fleet Configuration Manager,tiered,
+Procurement Manager,tiered,
+Accounting and Tax Manager,tiered,
