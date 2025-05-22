@@ -48,12 +48,26 @@ tier_module_col = 'Module'
 tier_threshold_col = 'Threshold'
 tier_price_col = 'Price'
 
+slider_defaults = {}
+slider_maximums = {}
+
 st.sidebar.subheader("📊 Module Usage" if not is_french else "📊 Utilisation des Modules")
 for _, mod in modules_df.iterrows():
     module_name = str(mod[module_col])
     pricing_type = str(mod[type_col]).strip().lower()
-    usage = st.sidebar.slider(module_name, 0, 1000, 0)
+
+    if admin_mode:
+        st.sidebar.markdown(f"**{module_name} Config**")
+        default_usage = st.sidebar.number_input(f"Default usage for {module_name}", min_value=0, value=100, key=f"default_{module_name}")
+        max_usage = st.sidebar.number_input(f"Max usage for {module_name}", min_value=default_usage, value=default_usage*2, key=f"max_{module_name}")
+    else:
+        default_usage = 100
+        max_usage = default_usage * 2
+
+    usage = st.sidebar.slider(module_name, 0, max_usage, default_usage, key=f"slider_{module_name}")
     usage_inputs[module_name] = usage
+    slider_defaults[module_name] = default_usage
+    slider_maximums[module_name] = max_usage
 
     if admin_mode:
         if pricing_type == 'flat':
