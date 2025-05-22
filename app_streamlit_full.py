@@ -7,7 +7,7 @@ st.set_page_config(page_title='Transport Pricing Simulator', layout='wide', page
 lang = st.sidebar.radio("🌍 Language", ["English", "Français"])
 is_french = lang == "Français"
 
-modules_df = pd.read_csv('modules_config_with_usage.csv')
+modules_df = pd.read_csv('modules_config_matched.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
 categories = {
@@ -40,8 +40,8 @@ admin_mode = st.sidebar.checkbox("🛠️ Admin Mode" if not is_french else "�
 usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
-
 updated_usage_settings = []
+saved_config = None
 
 st.sidebar.subheader("📊 Module Usage" if not is_french else "📊 Utilisation des Modules")
 for _, mod in modules_df.iterrows():
@@ -76,6 +76,14 @@ for _, mod in modules_df.iterrows():
         elif pricing_type == 'tiered':
             tier_configs[module_name] = tiers_df[tiers_df["Module"] == module_name].copy()
 
+# ✅ Save button in sidebar
+if admin_mode and st.sidebar.button("💾 Save Usage Settings"):
+    saved_config = modules_df.copy()
+    for mod_name, default_val, max_val in updated_usage_settings:
+        saved_config.loc[saved_config["Module"] == mod_name, "DefaultUsage"] = default_val
+        saved_config.loc[saved_config["Module"] == mod_name, "MaxUsage"] = max_val
+
+# Pricing logic
 records = []
 for module_name, usage in usage_inputs.items():
     pricing_type = str(modules_df[modules_df["Module"] == module_name]["Type"].values[0]).lower()
@@ -145,15 +153,7 @@ with col2:
 st.markdown("### 🧾 Cost Breakdown by Module" if not is_french else "### 🧾 Détail du Coût par Module")
 st.dataframe(results_df.style.format({col: "{:,.0f}" for col in results_df.select_dtypes(include="number").columns}))
 
-# Save settings section
-if admin_mode:
-    st.markdown("### 💾 Save Updated Usage Settings")
-    if st.button("📥 Download Config CSV"):
-        save_df = modules_df.copy()
-        for mod_name, default_val, max_val in updated_usage_settings:
-            save_df.loc[save_df["Module"] == mod_name, "DefaultUsage"] = default_val
-            save_df.loc[save_df["Module"] == mod_name, "MaxUsage"] = max_val
-        st.download_button("⬇️ Download Updated Config CSV",
-                           save_df.to_csv(index=False),
-                           file_name="updated_modules_config.csv",
-                           mime="text/csv")
+# ✅ Show download button only after saving
+if saved_config is not None:
+    csv_data = saved_config.to_csv(index=False)
+    st.download_button("⬇️ Download Updated Config CSV", csv_data, file_name="updated_modules_config.csv", mime="text/csv")
