@@ -2,11 +2,18 @@ import streamlit as st
 import pandas as pd
 import altair as alt
 
-# Load configuration
+# Set up page and theme
+st.set_page_config(page_title='Transport Pricing Simulator', layout='wide', page_icon='🚌')
+
+# Language toggle
+lang = st.sidebar.radio("🌍 Language", ["English", "Français"])
+is_french = lang == "Français"
+
+# Load data
 modules_df = pd.read_csv('modules_config_clean.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
-# Add categories to each module
+# Categories (hardcoded)
 categories = {
     "Booking Manager": "Booking & Sales",
     "Online Booking Manager": "Booking & Sales",
@@ -22,11 +29,19 @@ categories = {
     "Accounting and Tax Manager": "Finance"
 }
 
-st.set_page_config(page_title='Transport Pricing Simulator', layout='wide')
-st.title("🚌 Transport Pricing Simulator")
+# Branding header
+st.markdown(
+    f"""
+    <div style='background-color:#004d40;padding:20px;border-radius:10px;margin-bottom:20px;'>
+        <h1 style='color:white;margin:0;'>🚌 Princesse Voyage Pricing Simulator</h1>
+        <p style='color:#c8e6c9;font-size:16px;margin:0;'>{"Simulate your software costs in real-time" if not is_french else "Simulez vos coûts logiciels en temps réel"}</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
-st.sidebar.header("Configuration")
-admin_mode = st.sidebar.checkbox("🛠️ Enable Admin Mode")
+# Admin toggle
+admin_mode = st.sidebar.checkbox("🛠️ Admin Mode" if not is_french else "🛠️ Mode Admin")
 
 # Column headers
 module_col = 'Module'
@@ -40,12 +55,12 @@ usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
 
-st.sidebar.subheader("📊 Module Usage")
+st.sidebar.subheader("📊 Module Usage" if not is_french else "📊 Utilisation des Modules")
 for _, mod in modules_df.iterrows():
     module_name = str(mod[module_col])
     pricing_type = str(mod[type_col]).strip().lower()
 
-    usage = st.sidebar.slider(f"{module_name}", 0, 1000, 0)
+    usage = st.sidebar.slider(module_name, 0, 1000, 0)
     usage_inputs[module_name] = usage
 
     if admin_mode:
@@ -112,18 +127,17 @@ for module_name, usage in usage_inputs.items():
         "Cost (FCFA)": cost
     })
 
-# Summary and display
 results_df = pd.DataFrame(records)
 total_cost = results_df["Cost (FCFA)"].sum()
 
-st.subheader(f"💰 Estimated Monthly Cost: {total_cost:,.0f} FCFA")
+st.subheader(f"💰 {'Estimated Monthly Cost' if not is_french else 'Coût Mensuel Estimé'}: {total_cost:,.0f} FCFA")
 
 col1, col2 = st.columns(2)
 with col1:
-    st.markdown("#### 📊 Bar Chart: Cost per Module")
+    st.markdown("#### 📊 Bar Chart: Cost per Module" if not is_french else "#### 📊 Coût par Module")
     st.bar_chart(results_df.set_index("Module")["Cost (FCFA)"])
 with col2:
-    st.markdown("#### 🥧 Pie Chart: Cost by Category")
+    st.markdown("#### 🥧 Pie Chart: Cost by Category" if not is_french else "#### 🥧 Coût par Catégorie")
     category_summary = results_df.groupby("Category", as_index=False)["Cost (FCFA)"].sum()
     pie = alt.Chart(category_summary).mark_arc(innerRadius=40).encode(
         theta=alt.Theta("Cost (FCFA)", type="quantitative"),
@@ -132,12 +146,15 @@ with col2:
     )
     st.altair_chart(pie, use_container_width=True)
 
-# Detailed Table
-st.markdown("### 🧾 Cost Breakdown by Module")
+# Breakdown
+st.markdown("### 🧾 Cost Breakdown by Module" if not is_french else "### 🧾 Détail du Coût par Module")
 st.dataframe(results_df.style.format({
     "Unit Price (used)": "{:.2f}",
     "Cost (FCFA)": "{:,.0f}"
 }))
 
-# CSV Export
-st.download_button("📥 Download Cost Breakdown", results_df.to_csv(index=False), file_name="pricing_breakdown.csv", mime="text/csv")
+# Download
+st.download_button("📥 Download CSV" if not is_french else "📥 Télécharger CSV",
+                   results_df.to_csv(index=False),
+                   file_name="pricing_breakdown.csv",
+                   mime="text/csv")
