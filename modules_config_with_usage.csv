@@ -2,10 +2,12 @@ Module,Type,UnitPrice,DefaultUsage,MaxUsage
 Booking Manager,tiered,,100,200
 Online Booking Manager,tiered,,100,200
 Parcel Manager,tiered,,100,200
-WhatsApp Notify,tiered,,100,200
-HR Manager,tiered,,100,200
-Fleet Manager,tiered,,100,200
-Customer Support,tiered,,100,200
+Expense Manager,tiered,,100,200
+Customer Communication Manager,tiered,,100,200
+Customer Support Personnel (External),tiered,,100,200
 Maintenance Manager,tiered,,100,200
-Procurement,tiered,,100,200
-Performance Tools,tiered,,1,1
+Performance Optimization Tools,tiered,,1,1
+HR Configuration Manager,tiered,,100,200
+Fleet Configuration Manager,tiered,,100,200
+Procurement Manager,tiered,,100,200
+Accounting and Tax Manager,tiered,,100,200
