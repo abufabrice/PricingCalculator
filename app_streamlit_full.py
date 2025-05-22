@@ -6,14 +6,29 @@ import altair as alt
 modules_df = pd.read_csv('modules_config_clean.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
+# Add categories to each module
+categories = {
+    "Booking Manager": "Booking & Sales",
+    "Online Booking Manager": "Booking & Sales",
+    "Parcel Manager": "Cargo & Parcel",
+    "Expense Manager": "Finance",
+    "Customer Communication Manager": "Customer Service",
+    "Customer Support Personnel (External)": "Customer Service",
+    "Maintenance Manager": "Fleet Operations",
+    "Performance Optimization Tools": "Optimization",
+    "HR Configuration Manager": "HR & Admin",
+    "Fleet Configuration Manager": "Fleet Operations",
+    "Procurement Manager": "Finance",
+    "Accounting and Tax Manager": "Finance"
+}
+
 st.set_page_config(page_title='Transport Pricing Simulator', layout='wide')
 st.title("🚌 Transport Pricing Simulator")
 
-# Sidebar settings
 st.sidebar.header("Configuration")
 admin_mode = st.sidebar.checkbox("🛠️ Enable Admin Mode")
 
-# Column definitions
+# Column headers
 module_col = 'Module'
 type_col = 'Type'
 price_col = 'UnitPrice'
@@ -21,7 +36,6 @@ tier_module_col = 'Module'
 tier_threshold_col = 'Threshold'
 tier_price_col = 'Price'
 
-# Inputs
 usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
@@ -56,6 +70,7 @@ for module_name, usage in usage_inputs.items():
     pricing_type = str(modules_df[modules_df[module_col] == module_name][type_col].values[0]).lower()
     cost = 0.0
     unit_price = None
+    category = categories.get(module_name, "Other")
 
     if pricing_type == 'flat':
         unit_price = flat_prices.get(module_name, 0.0)
@@ -90,35 +105,39 @@ for module_name, usage in usage_inputs.items():
 
     records.append({
         "Module": module_name,
+        "Category": category,
         "Usage": usage,
         "Pricing Type": pricing_type,
         "Unit Price (used)": unit_price,
         "Cost (FCFA)": cost
     })
 
-# Results
+# Summary and display
 results_df = pd.DataFrame(records)
 total_cost = results_df["Cost (FCFA)"].sum()
 
 st.subheader(f"💰 Estimated Monthly Cost: {total_cost:,.0f} FCFA")
 
-# Charts
 col1, col2 = st.columns(2)
 with col1:
     st.markdown("#### 📊 Bar Chart: Cost per Module")
     st.bar_chart(results_df.set_index("Module")["Cost (FCFA)"])
 with col2:
-    st.markdown("#### 🥧 Pie Chart: Cost Distribution")
-    pie = alt.Chart(results_df).mark_arc(innerRadius=40).encode(
+    st.markdown("#### 🥧 Pie Chart: Cost by Category")
+    category_summary = results_df.groupby("Category", as_index=False)["Cost (FCFA)"].sum()
+    pie = alt.Chart(category_summary).mark_arc(innerRadius=40).encode(
         theta=alt.Theta("Cost (FCFA)", type="quantitative"),
-        color=alt.Color("Module", type="nominal"),
-        tooltip=["Module", "Cost (FCFA)"]
+        color=alt.Color("Category", type="nominal"),
+        tooltip=["Category", "Cost (FCFA)"]
     )
     st.altair_chart(pie, use_container_width=True)
 
-# Cost breakdown at bottom
+# Detailed Table
 st.markdown("### 🧾 Cost Breakdown by Module")
-st.dataframe(results_df.style.format({"Unit Price (used)": "{:.2f}", "Cost (FCFA)": "{:,.0f}"}))
+st.dataframe(results_df.style.format({
+    "Unit Price (used)": "{:.2f}",
+    "Cost (FCFA)": "{:,.0f}"
+}))
 
-# Download
+# CSV Export
 st.download_button("📥 Download Cost Breakdown", results_df.to_csv(index=False), file_name="pricing_breakdown.csv", mime="text/csv")
