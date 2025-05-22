@@ -1,7 +1,37 @@
 Module,Threshold,Price
-Parcel Manager,100,100.0
-Parcel Manager,500,80.0
-Parcel Manager,,60.0
-WhatsApp Notification,500,5.0
-WhatsApp Notification,2000,3.5
-WhatsApp Notification,,2.5
+Booking Manager,100,100
+Booking Manager,500,80
+Booking Manager,,60
+Online Booking Manager,100,100
+Online Booking Manager,500,80
+Online Booking Manager,,60
+Parcel Manager,100,100
+Parcel Manager,500,80
+Parcel Manager,,60
+Expense Manager,100,100
+Expense Manager,500,80
+Expense Manager,,60
+Customer Communication Manager,100,100
+Customer Communication Manager,500,80
+Customer Communication Manager,,60
+Customer Support Personnel (External),100,100
+Customer Support Personnel (External),500,80
+Customer Support Personnel (External),,60
+Maintenance Manager,100,100
+Maintenance Manager,500,80
+Maintenance Manager,,60
+Performance Optimization Tools,100,100
+Performance Optimization Tools,500,80
+Performance Optimization Tools,,60
+HR Configuration Manager,100,100
+HR Configuration Manager,500,80
+HR Configuration Manager,,60
+Fleet Configuration Manager,100,100
+Fleet Configuration Manager,500,80
+Fleet Configuration Manager,,60
+Procurement Manager,100,100
+Procurement Manager,500,80
+Procurement Manager,,60
+Accounting and Tax Manager,100,100
+Accounting and Tax Manager,500,80
+Accounting and Tax Manager,,60
