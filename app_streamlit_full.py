@@ -36,7 +36,7 @@ categories = {
 st.markdown(
     f"""
     <div style='background-color:#004d40;padding:20px;border-radius:10px;margin-bottom:20px;'>
-        <h1 style='color:white;margin:0;'>🚌 Ongoing Pricing Simulator</h1>
+        <h1 style='color:white;margin:0;'>Ongoing Pricing Simulator</h1>
         <p style='color:#c8e6c9;font-size:16px;margin:0;'>{"Simulate the software costs for your digital transformation in real-time" if not is_french else "Simulez vos coûts logiciels en temps réel"}</p>
     </div>
     """,
