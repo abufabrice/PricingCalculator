@@ -7,7 +7,7 @@ st.set_page_config(page_title='Transport Pricing Simulator', layout='wide', page
 lang = st.sidebar.radio("🌍 Language", ["English", "Français"])
 is_french = lang == "Français"
 
-modules_df = pd.read_csv('modules_config_matched.csv')
+modules_df = pd.read_csv('modules_config_with_usage.csv')
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
 categories = {
