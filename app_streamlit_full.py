@@ -7,9 +7,17 @@ st.set_page_config(page_title='Transport Pricing Simulator', layout='wide', page
 lang = st.sidebar.radio("🌍 Language", ["English", "Français"])
 is_french = lang == "Français"
 
-modules_df = pd.read_csv('modules_config_matched.csv')
+DEFAULT_CONFIG = 'modules_config_matched.csv'
+CONFIG_KEY = 'live_config'
+
+# Load config from CSV only once per session
+if CONFIG_KEY not in st.session_state:
+    st.session_state[CONFIG_KEY] = pd.read_csv(DEFAULT_CONFIG)
+
+modules_df = st.session_state[CONFIG_KEY]
 tiers_df = pd.read_csv('module_tiers_clean.csv')
 
+# Optional: business logic for grouping
 categories = {
     "Booking Manager": "Booking & Sales",
     "Online Booking Manager": "Booking & Sales",
@@ -41,9 +49,10 @@ usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
 updated_usage_settings = []
-saved_config = None
 
 st.sidebar.subheader("📊 Module Usage" if not is_french else "📊 Utilisation des Modules")
+
+# MAIN CONFIG LOOP
 for _, mod in modules_df.iterrows():
     module_name = str(mod["Module"])
     pricing_type = str(mod["Type"]).strip().lower()
@@ -76,14 +85,20 @@ for _, mod in modules_df.iterrows():
         elif pricing_type == 'tiered':
             tier_configs[module_name] = tiers_df[tiers_df["Module"] == module_name].copy()
 
-# ✅ Save button in sidebar
+# ✅ Save updates into session_state
 if admin_mode and st.sidebar.button("💾 Save Usage Settings"):
-    saved_config = modules_df.copy()
+    new_df = modules_df.copy()
     for mod_name, default_val, max_val in updated_usage_settings:
-        saved_config.loc[saved_config["Module"] == mod_name, "DefaultUsage"] = default_val
-        saved_config.loc[saved_config["Module"] == mod_name, "MaxUsage"] = max_val
+        new_df.loc[new_df["Module"] == mod_name, "DefaultUsage"] = default_val
+        new_df.loc[new_df["Module"] == mod_name, "MaxUsage"] = max_val
+    st.session_state[CONFIG_KEY] = new_df
+    st.success("✅ Usage settings saved to session.")
 
-# Pricing logic
+    if st.sidebar.checkbox("💾 Permanently overwrite CSV file"):
+        new_df.to_csv(DEFAULT_CONFIG, index=False)
+        st.sidebar.success("✅ File overwritten on disk.")
+
+# ===== CALCULATION & DISPLAY =====
 records = []
 for module_name, usage in usage_inputs.items():
     pricing_type = str(modules_df[modules_df["Module"] == module_name]["Type"].values[0]).lower()
@@ -134,6 +149,7 @@ for module_name, usage in usage_inputs.items():
 results_df = pd.DataFrame(records)
 total_cost = results_df["Cost (FCFA)"].sum()
 
+# ===== UI OUTPUTS =====
 st.subheader(f"💰 {'Estimated Monthly Cost' if not is_french else 'Coût Mensuel Estimé'}: {total_cost:,.0f} FCFA")
 
 col1, col2 = st.columns(2)
@@ -153,7 +169,6 @@ with col2:
 st.markdown("### 🧾 Cost Breakdown by Module" if not is_french else "### 🧾 Détail du Coût par Module")
 st.dataframe(results_df.style.format({col: "{:,.0f}" for col in results_df.select_dtypes(include="number").columns}))
 
-# ✅ Show download button only after saving
-if saved_config is not None:
-    csv_data = saved_config.to_csv(index=False)
-    st.download_button("⬇️ Download Updated Config CSV", csv_data, file_name="updated_modules_config.csv", mime="text/csv")
+# ✅ Export updated config
+csv_data = st.session_state[CONFIG_KEY].to_csv(index=False)
+st.download_button("⬇️ Download Current Config CSV", csv_data, file_name="updated_modules_config.csv", mime="text/csv")
