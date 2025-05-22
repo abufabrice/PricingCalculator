@@ -9,12 +9,11 @@ tiers_df = pd.read_csv('module_tiers_clean.csv')
 st.set_page_config(page_title='Transport Pricing Simulator', layout='wide')
 st.title("🚌 Transport Pricing Simulator")
 
-# Header and layout sections
-top_col1, top_col2 = st.columns([2, 1])
-top_col1.markdown("Use the sliders to estimate your monthly cost based on actual usage. Admins can configure pricing tiers and unit prices.")
-admin_mode = top_col2.checkbox("🛠️ Enable Admin Mode")
+# Sidebar settings
+st.sidebar.header("Configuration")
+admin_mode = st.sidebar.checkbox("🛠️ Enable Admin Mode")
 
-# Columns for pricing structure
+# Column definitions
 module_col = 'Module'
 type_col = 'Type'
 price_col = 'UnitPrice'
@@ -22,12 +21,12 @@ tier_module_col = 'Module'
 tier_threshold_col = 'Threshold'
 tier_price_col = 'Price'
 
-# Usage and pricing inputs
+# Inputs
 usage_inputs = {}
 flat_prices = {}
 tier_configs = {}
 
-st.sidebar.subheader("📊 Module Usage Configuration")
+st.sidebar.subheader("📊 Module Usage")
 for _, mod in modules_df.iterrows():
     module_name = str(mod[module_col])
     pricing_type = str(mod[type_col]).strip().lower()
@@ -38,7 +37,7 @@ for _, mod in modules_df.iterrows():
     if admin_mode:
         if pricing_type == 'flat':
             default_price = float(mod[price_col]) if pd.notna(mod[price_col]) else 0.0
-            flat_prices[module_name] = st.sidebar.number_input(f"{module_name} Unit Price", value=default_price, min_value=0.0)
+            flat_prices[module_name] = st.sidebar.number_input(f"{module_name} Price", value=default_price, min_value=0.0)
         elif pricing_type == 'tiered':
             st.sidebar.markdown(f"**{module_name} – Tiered Pricing**")
             tier_data = tiers_df[tiers_df[tier_module_col] == module_name].copy()
@@ -89,7 +88,6 @@ for module_name, usage in usage_inputs.items():
                 cost += remaining * fallback
                 unit_price = fallback
 
-    category = "Other"
     records.append({
         "Module": module_name,
         "Usage": usage,
@@ -103,8 +101,6 @@ results_df = pd.DataFrame(records)
 total_cost = results_df["Cost (FCFA)"].sum()
 
 st.subheader(f"💰 Estimated Monthly Cost: {total_cost:,.0f} FCFA")
-st.markdown("### 🧾 Cost Breakdown by Module")
-st.dataframe(results_df.style.format({"Unit Price (used)": "{:.2f}", "Cost (FCFA)": "{:,.0f}"}))
 
 # Charts
 col1, col2 = st.columns(2)
@@ -119,6 +115,10 @@ with col2:
         tooltip=["Module", "Cost (FCFA)"]
     )
     st.altair_chart(pie, use_container_width=True)
+
+# Cost breakdown at bottom
+st.markdown("### 🧾 Cost Breakdown by Module")
+st.dataframe(results_df.style.format({"Unit Price (used)": "{:.2f}", "Cost (FCFA)": "{:,.0f}"}))
 
 # Download
 st.download_button("📥 Download Cost Breakdown", results_df.to_csv(index=False), file_name="pricing_breakdown.csv", mime="text/csv")
