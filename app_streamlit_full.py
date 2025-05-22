@@ -37,7 +37,7 @@ st.markdown(
     f"""
     <div style='background-color:#004d40;padding:20px;border-radius:10px;margin-bottom:20px;'>
         <h1 style='color:white;margin:0;'>🚌 Princesse Voyage Pricing Simulator</h1>
-        <p style='color:#c8e6c9;font-size:16px;margin:0;'>{"Simulate your software costs in real-time" if not is_french else "Simulez vos coûts logiciels en temps réel"}</p>
+        <p style='color:#c8e6c9;font-size:16px;margin:0;'>{"Simulate your software costs for your digitl transformation in real-time" if not is_french else "Simulez vos coûts logiciels en temps réel"}</p>
     </div>
     """,
     unsafe_allow_html=True
