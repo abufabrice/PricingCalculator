@@ -36,8 +36,8 @@ categories = {
 st.markdown(
     f"""
     <div style='background-color:#004d40;padding:10px;border-radius:7px;margin-bottom:20px;'>
-        <h1 style='color:white;margin:0;'>Software Cost Simulator</h1>
-        <p style='color:#c8e6c9;font-size:16px;margin:0;'>{"Built for intercity transport agencies navigating digital transformation." if not is_french else "Simulez vos coûts logiciels en temps réel"}</p>
+        <h1 style='color:white;margin:0;'>Tiered Pricing Simulator</h1>
+        <p style='color:#c8e6c9;font-size:16px;margin:0;'>{"Simulate software costs for intercity transport agencies navigating digital transformation." if not is_french else "Simulez vos coûts logiciels en temps réel"}</p>
     </div>
     """,
     unsafe_allow_html=True
